@@ -12,4 +12,8 @@
     <PackageReference Include="RekTec.Crm.Common" Version="12.2.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="模板\" />
+  </ItemGroup>
+
 </Project>
