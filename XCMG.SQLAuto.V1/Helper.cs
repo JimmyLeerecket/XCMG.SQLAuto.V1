@@ -204,10 +204,11 @@ VALUES
    isnull((SELECT businessunitid FROM SystemUser WHERE address1_telephone1=(select address1_telephone1 from {dbName}.dbo.systemuser where systemuserid=t2.ownerid)),(SELECT businessunitid FROM SystemUser WHERE fullname='{adminName}'))
 )";
 
-                string outputPath = "C:\\Mac\\Home\\Desktop\\jimmyli\\Import\\Output\\SQL_0605.txt";
-
-                Console.WriteLine(SQL + "\n" + SQL_new, outputPath);
-
+                //string outputPath = "C:\\Mac\\Home\\Desktop\\jimmyli\\Import\\Output\\SQL_0605.txt";
+                Console.WriteLine("请在下方输入文件名：");
+                var outputPath = "C:\\Mac\\Home\\Desktop\\jimmyli\\Import\\Output\\{0}.txt";
+                var outputPathName = Console.ReadLine();
+                outputPath = string.Format(outputPath, outputPathName);
                 SaveToTxt(SQL + "\n" + SQL_new, outputPath);
             }
             catch (Exception ex)
@@ -347,6 +348,8 @@ VALUES
                 File.AppendAllText(filePath, content + Environment.NewLine);
             else
                 File.WriteAllText(filePath, content);
+
+            Console.WriteLine("成功!文件输出地址：" + filePath);
         }
 
     }
