@@ -206,7 +206,8 @@ VALUES
 
                 //string outputPath = "C:\\Mac\\Home\\Desktop\\jimmyli\\Import\\Output\\SQL_0605.txt";
                 Console.WriteLine("请在下方输入文件名：");
-                var outputPath = "C:\\Mac\\Home\\Desktop\\jimmyli\\Import\\Output\\{0}.txt";
+                var outputPath = "\\\\Mac\\Home\\Downloads\\{0}.txt";
+
                 var outputPathName = Console.ReadLine();
                 outputPath = string.Format(outputPath, outputPathName);
                 SaveToTxt(SQL + "\n" + SQL_new, outputPath);
@@ -297,42 +298,45 @@ VALUES
             endBuilder_old.Append($"    LEFT JOIN {dbName}.{Cast.ConToString(row["老系统关联到"])}Base AS {Cast.ConToString(row["老系统关联到"])} ON {Cast.ConToString(row["老系统关联到"])}id = {Cast.ConToString(row["老系统表名"])}.{Cast.ConToString(row["老系统字段名"])}\n");
 
 
-            //var oldModels = models?.OldModels?.Where(x => x.EntityName == Cast.ConToString(row["老系统关联到"])).ToList();//&& (x.Key != Cast.ConToString(row["老系统关联到字段"]) || x.Value != Cast.ConToString(row["老系统字段名"]))
-            
+            var oldModels = models?.OldModels?.Where(x => x.EntityName == Cast.ConToString(row["老系统关联到"])).ToList();//&& (x.Key != Cast.ConToString(row["老系统关联到字段"]) || x.Value != Cast.ConToString(row["老系统字段名"]))
+            var lists = (from model in models?.OldModels
+                        where model.EntityName == Cast.ConToString(row["老系统关联到"]) && model.Key != Cast.ConToString(row["老系统关联到字段"])
+                        select model).ToList();
+
             //if (oldModels?.Count == 0 )
             //{
             //    bodyBuilder_old.Append($"       {Cast.ConToString(row["老系统关联到"])}.{Cast.ConToString(row["老系统关联到字段"])} AS {Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
             //    endBuilder_old.Append($"    LEFT JOIN {dbName}.{Cast.ConToString(row["老系统关联到"])}Base AS {Cast.ConToString(row["老系统关联到"])} ON {Cast.ConToString(row["老系统关联到"])}id = {Cast.ConToString(row["老系统表名"])}.{Cast.ConToString(row["老系统字段名"])}\n");
 
-            //    var oldList = new List<LookupEntityModel>();
-            //    var oldModel = new LookupEntityModel
-            //    {
-            //        EntityName = Cast.ConToString(row["老系统关联到"]),
-            //        Key = Cast.ConToString(row["老系统关联到字段"]),
-            //        Value = Cast.ConToString(row["老系统字段名"]),
-            //    };
+                       //    var oldList = new List<LookupEntityModel>();
+                       //    var oldModel = new LookupEntityModel
+                       //    {
+                       //        EntityName = Cast.ConToString(row["老系统关联到"]),
+                       //        Key = Cast.ConToString(row["老系统关联到字段"]),
+                       //        Value = Cast.ConToString(row["老系统字段名"]),
+                       //    };
 
-            //    models?.OldModels.Add(oldModel);
-            //}
-            //else
-            //{
-            //    foreach ( var oldModel in oldModels)
-            //    {
-            //        if (oldModel.Key != Cast.ConToString(row["老系统关联到字段"]))
-            //        {
-            //            bodyBuilder_old.Append($"       {Cast.ConToString(row["老系统关联到"])}.{Cast.ConToString(row["老系统关联到字段"])} AS {Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
-            //        }
-            //        else if (oldModel.Value != Cast.ConToString(row["老系统字段名"]))
-            //        {
-            //            bodyBuilder_old.Append($"       {Cast.ConToString(row["老系统关联到"])}.{Cast.ConToString(row["老系统关联到字段"])} AS {Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
-            //            endBuilder_old.Append($"    LEFT JOIN {dbName}.{Cast.ConToString(row["老系统关联到"])}Base AS {Cast.ConToString(row["老系统关联到"])} ON {Cast.ConToString(row["老系统关联到"])}id = {Cast.ConToString(row["老系统表名"])}.{Cast.ConToString(row["老系统字段名"])}\n");
-            //        }
-            //        else
-            //        {
+                       //    models?.OldModels.Add(oldModel);
+                       //}
+                       //else
+                       //{
+                       //    foreach ( var oldModel in oldModels)
+                       //    {
+                       //        if (oldModel.Key != Cast.ConToString(row["老系统关联到字段"]))
+                       //        {
+                       //            bodyBuilder_old.Append($"       {Cast.ConToString(row["老系统关联到"])}.{Cast.ConToString(row["老系统关联到字段"])} AS {Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
+                       //        }
+                       //        else if (oldModel.Value != Cast.ConToString(row["老系统字段名"]))
+                       //        {
+                       //            bodyBuilder_old.Append($"       {Cast.ConToString(row["老系统关联到"])}.{Cast.ConToString(row["老系统关联到字段"])} AS {Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
+                       //            endBuilder_old.Append($"    LEFT JOIN {dbName}.{Cast.ConToString(row["老系统关联到"])}Base AS {Cast.ConToString(row["老系统关联到"])} ON {Cast.ConToString(row["老系统关联到"])}id = {Cast.ConToString(row["老系统表名"])}.{Cast.ConToString(row["老系统字段名"])}\n");
+                       //        }
+                       //        else
+                       //        {
 
-            //        }
-            //    }
-            //}
+                       //        }
+                       //    }
+                       //}
 
             bodyBuilder_new.Append($"       {Cast.ConToString(row["新系统关联到"])}.{Cast.ConToString(row["新系统关联到"])}id AS {Cast.ConToString(row["新系统字段名"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
             endBuilder_new.Append($"    LEFT JOIN {Cast.ConToString(row["新系统关联到"])}Base AS {Cast.ConToString(row["新系统关联到"])} ON {Cast.ConToString(row["新系统关联到"])}.{Cast.ConToString(row["新系统关联到字段"])} = main.{Cast.ConToString(row["老系统表名"])}_{Cast.ConToString(row["老系统关联到字段"])}\n");

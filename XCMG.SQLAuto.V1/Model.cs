@@ -26,4 +26,19 @@ namespace XCMG.SQLAuto.V1
         public List<LookupEntityModel> OldModels { get; set; } = new List<LookupEntityModel>();
         public List<LookupEntityModel> NewModels { get; set; } = new List<LookupEntityModel>();
     }
+
+    public class Product
+    {
+        public string? Color { get; set; }
+        public decimal Price { get; set; }
+        public string? Name { get; set; }
+        public string? Category { get; set; }
+        public string? Size { get; set; }
+    }
+
+    public class Category
+    {
+        public string? Name { get; set; }
+        public string? Description { get; set; }
+    }
 }
