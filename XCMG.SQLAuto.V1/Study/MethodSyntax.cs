@@ -11,10 +11,7 @@ namespace XCMG.SQLAuto.V1.Study
         public void MainMethodSyntax()
         {
             int[] array = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-            var _queryMany = array.SelectMany(i => array
-                                    .Where(j => j <= i)
-                                    .Select(j => $"{(j == 1 ? "\n" : "")}{j}*{i}={i * j}\t")
-                                );
+            var _queryMany = array.SelectMany(i => array.Where(j => j <= i).Select(j => $"{(j == 1 ? "\n" : "")}{j}*{i}={i * j}\t"));
 
             Console.WriteLine(string.Concat(_queryMany));
 
