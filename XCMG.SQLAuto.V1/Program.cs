@@ -6,8 +6,8 @@ public partial class Program
     static void Main(string[] args)
     {
         // 生成统计单
-        //string filePath = "C:\\Mac\\Home\\Desktop\\jimmyli\\Import\\Input\\SQL导入模版.xlsx";
-        //Helper.ImportExcel(filePath);
+        string filePath = "C:\\Mac\\Home\\Desktop\\jimmyli\\Import\\Input\\SQL导入模版.xlsx";
+        Helper.ImportExcel(filePath);
 
         //var currentThread = Thread.CurrentThread;
         //Console.WriteLine("线程标识：" + currentThread.Name);
@@ -17,7 +17,7 @@ public partial class Program
         //Console.WriteLine("是否为线程池线程" + currentThread.IsThreadPoolThread);
 
         // LINQ
-         LINQ.SelectNewObject();
+        // LINQ.SelectNewObject();
     }
 }
 

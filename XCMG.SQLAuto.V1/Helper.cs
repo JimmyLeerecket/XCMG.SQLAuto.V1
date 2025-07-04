@@ -5,6 +5,7 @@ using NPOI.XSSF.UserModel;
 using RekTec.Crm.Common.Helper;
 using System;
 using System.Data;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml.Linq;
 using static NPOI.HSSF.Util.HSSFColor;
@@ -35,6 +36,7 @@ namespace XCMG.SQLAuto.V1
             dt.Columns.Add("销售组织");
             dt.Columns.Add("映射关系");
             dt.Columns.Add("销售组织管理员");
+            dt.Columns.Add("老系统表名简化");
 
             using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
@@ -45,7 +47,6 @@ namespace XCMG.SQLAuto.V1
                 {
                     IRow row = sheet.GetRow(i);
                     if (row == null) continue; // 跳过空行
-
                     DataRow dataRow = dt.NewRow();
                     dataRow["新系统字段标签名"] = row.GetCell(0)?.ToString()?.Trim() ?? string.Empty;
                     dataRow["新系统字段名"] = row.GetCell(1)?.ToString()?.Trim() ?? string.Empty;
@@ -64,8 +65,9 @@ namespace XCMG.SQLAuto.V1
                     dataRow["新系统表名"] = sheet.GetRow(1).GetCell(14)?.ToString()?.Trim() ?? string.Empty;
                     dataRow["数据库地址"] = sheet.GetRow(1).GetCell(15)?.ToString()?.Trim() ?? string.Empty;
                     dataRow["销售组织"] = sheet.GetRow(1).GetCell(16)?.ToString()?.Trim() ?? string.Empty;
-                    dataRow["映射关系"] = row.GetCell(17)?.ToString()?.Trim() ?? string.Empty;
+                    dataRow["映射关系"] = row.GetCell(10)?.ToString()?.Trim() ?? string.Empty;
                     dataRow["销售组织管理员"] = sheet.GetRow(1).GetCell(18)?.ToString()?.Trim() ?? string.Empty;
+                    dataRow["老系统表名简化"] = GetTableName(sheet.GetRow(1).GetCell(6)?.ToString()?.Trim() ?? string.Empty);
                     
                     dt.Rows.Add(dataRow);
                 }
@@ -85,14 +87,15 @@ namespace XCMG.SQLAuto.V1
 
                 StringBuilder builderBody = new StringBuilder();
                 StringBuilder endBuilder = new StringBuilder();
-                string main = Cast.ConToString(rowFirst["老系统表名"]);
+                string main = Cast.ConToString(rowFirst["老系统表名简化"]);
                 endBuilder.Append(@$"       {main}.ownerid,
        {main}.ModifiedBy,
        {main}.ModifiedOn,
        {main}.CreatedBy,
        {main}.CreatedOn,
        {main}.statecode
-    FROM {dbName}.{Cast.ConToString(rowFirst["老系统表名"])}Base AS {Cast.ConToString(rowFirst["老系统表名"])}
+    FROM {dbName}.{Cast.ConToString(rowFirst["老系统表名"])}Base AS {GetTableName(Cast.ConToString(rowFirst["老系统表名"]))}
+    LEFT JOIN {dbName}.Systemuser AS owner ON owner.systemuserid = {GetTableName(Cast.ConToString(rowFirst["老系统表名"]))}.ownerid
 ");
                 LookupEntityModels models = new LookupEntityModels();
                 StringBuilder bodyBuilder_New = new StringBuilder();
@@ -135,6 +138,10 @@ namespace XCMG.SQLAuto.V1
                             builderBody.Append(GetFieldIsDatetime(row));
                             break;
 
+                        case "date":
+                            builderBody.Append(GetFieldIsDatetime(row));
+                            break;
+
                         case "picklist":
                             builderBody.Append(GetFieldIsPicklist(row));
                             break;
@@ -155,15 +162,18 @@ namespace XCMG.SQLAuto.V1
                 string SQL = $@"
 SELECT * INTO {orgName}_{Cast.ConToString(rowFirst["老系统表名"])} FROM(
     SELECT
-       {Cast.ConToString(rowFirst["老系统表名"])}id as new_oldid,
-{builderBody.ToString()}{endBuilder.ToString()})table";
+       {Cast.ConToString(rowFirst["老系统表名"])}id AS new_oldid,
+       owner.address1_telephone1 AS ownerid_address1_telephone1,
+{builderBody.ToString()}{endBuilder.ToString()})t";
 
                 string SQL_new = $@"
 MERGE INTO {Cast.ConToString(rowFirst["新系统表名"])}Base t1
 USING(
     SELECT
-{bodyBuilder_New.ToString()}       main.*
-    {endBuilder_New.ToString()}) t2
+{bodyBuilder_New.ToString()}       main.*,
+       owner.systemuserid AS new_systemuser_id
+    {endBuilder_New.ToString()}    LEFT JOIN Systemuser AS owner ON owner.address1_telephone1 = main.ownerid_address1_telephone1 AND owner.isdisabled = 0
+) t2
 ON(t1.new_oldid = t2.new_oldid)
 WHEN MATCHED THEN
 UPDATE SET
@@ -171,11 +181,11 @@ UPDATE SET
    statecode = t2.statecode,
    CreatedOn = t2.CreatedOn,
    ModifiedOn = t2.ModifiedOn,
-   ModifiedBy = isnull((SELECT SystemUserid FROM SystemUser WHERE address1_telephone1=(select address1_telephone1 from {dbName}.dbo.systemuser where systemuserid=t2.ModifiedBy)),(SELECT SystemUserid FROM SystemUser WHERE fullname='{adminName}')),
-   CreatedBy = isnull((SELECT SystemUserid FROM SystemUser WHERE address1_telephone1=(select address1_telephone1 from {dbName}.dbo.systemuser where systemuserid=t2.CreatedBy)),(SELECT SystemUserid FROM SystemUser WHERE fullname='{adminName}')),
+   ModifiedBy = isnull(t2.new_systemuser_id,(SELECT SystemUserid FROM SystemUser WHERE fullname = '{adminName}')),
+   CreatedBy = isnull(t2.new_systemuser_id,(SELECT SystemUserid FROM SystemUser WHERE fullname = '{adminName}')),
    OwnerIdType = 8,
-   ownerid = isnull((SELECT SystemUserid FROM SystemUser WHERE address1_telephone1=(select address1_telephone1 from {dbName}.dbo.systemuser where systemuserid=t2.ownerid)),(SELECT SystemUserid FROM SystemUser WHERE fullname='{adminName}')),
-   OwningBusinessUnit = isnull((SELECT businessunitid FROM SystemUser WHERE address1_telephone1=(select address1_telephone1 from {dbName}.dbo.systemuser where systemuserid=t2.ownerid)),(SELECT businessunitid FROM SystemUser WHERE fullname='{adminName}'))
+   ownerid = isnull(t2.new_systemuser_id,(SELECT SystemUserid FROM SystemUser WHERE fullname = '{adminName}')),
+   OwningBusinessUnit = isnull((SELECT businessunitid FROM SystemUser WHERE systemuserid = t2.new_systemuser_id),(SELECT businessunitid FROM SystemUser WHERE fullname = '{adminName}'))
 WHEN NOT MATCHED THEN
 INSERT
 (
@@ -197,11 +207,11 @@ VALUES
    t2.statecode,
    t2.CreatedOn,
    t2.ModifiedOn,
-   isnull((SELECT SystemUserid FROM SystemUser WHERE address1_telephone1=(select address1_telephone1 from {dbName}.dbo.systemuser where systemuserid=t2.ModifiedBy)),(SELECT SystemUserid FROM SystemUser WHERE fullname='{adminName}')),
-   isnull((SELECT SystemUserid FROM SystemUser WHERE address1_telephone1=(select address1_telephone1 from {dbName}.dbo.systemuser where systemuserid=t2.CreatedBy)),(SELECT SystemUserid FROM SystemUser WHERE fullname='{adminName}')),
+   isnull(t2.new_systemuser_id,(SELECT SystemUserid FROM SystemUser WHERE fullname = '{adminName}')),
+   isnull(t2.new_systemuser_id,(SELECT SystemUserid FROM SystemUser WHERE fullname = '{adminName}')),
    8,
-   isnull((SELECT SystemUserid FROM SystemUser WHERE address1_telephone1=(select address1_telephone1 from {dbName}.dbo.systemuser where systemuserid=t2.ownerid)),(SELECT SystemUserid FROM SystemUser WHERE fullname='{adminName}')),
-   isnull((SELECT businessunitid FROM SystemUser WHERE address1_telephone1=(select address1_telephone1 from {dbName}.dbo.systemuser where systemuserid=t2.ownerid)),(SELECT businessunitid FROM SystemUser WHERE fullname='{adminName}'))
+   isnull(t2.new_systemuser_id,(SELECT SystemUserid FROM SystemUser WHERE fullname = '{adminName}')),
+   isnull((SELECT businessunitid FROM SystemUser WHERE systemuserid = t2.new_systemuser_id),(SELECT businessunitid FROM SystemUser WHERE fullname = '{adminName}'))
 )";
 
                 //string outputPath = "C:\\Mac\\Home\\Desktop\\jimmyli\\Import\\Output\\SQL_0605.txt";
@@ -220,22 +230,29 @@ VALUES
 
         private static string GetFieldIsStringOrInter(DataRow row)
         {
-            return $"       {Cast.ConToString(row["老系统表名"])}.{Cast.ConToString(row["老系统字段名"])} as {Cast.ConToString(row["新系统字段名"])},  --{Cast.ConToString(row["新系统字段标签名"])}\n";
+            return $"       {Cast.ConToString(row["老系统表名简化"])}.{Cast.ConToString(row["老系统字段名"])} AS {Cast.ConToString(row["新系统字段名"])},  --{Cast.ConToString(row["新系统字段标签名"])}\n";
         }
 
         private static string GetFieldIsDoubleOrDecimal(DataRow row)
         {
-            return $"       {Cast.ConToString(row["老系统表名"])}.{Cast.ConToString(row["老系统字段名"])}/10000.00 as {Cast.ConToString(row["新系统字段名"])},  --{Cast.ConToString(row["新系统字段标签名"])}(转换成万元)\n";
+            if (Cast.ConToString(row["新系统字段名"]).Contains('万'))
+            {
+                return $"       {Cast.ConToString(row["老系统表名简化"])}.{Cast.ConToString(row["老系统字段名"])}/10000.00 AS {Cast.ConToString(row["新系统字段名"])},  --{Cast.ConToString(row["新系统字段标签名"])}(转换成万元)\n";
+            }
+            else
+            {
+                return $"       {Cast.ConToString(row["老系统表名简化"])}.{Cast.ConToString(row["老系统字段名"])} AS {Cast.ConToString(row["新系统字段名"])},  --{Cast.ConToString(row["新系统字段标签名"])}\n";
+            }
         }
 
         private static string GetFieldIsBoolean(DataRow row)
         {
-            return $"       {Cast.ConToString(row["老系统表名"])}.{Cast.ConToString(row["老系统字段名"])} as {Cast.ConToString(row["新系统字段名"])},  --{Cast.ConToString(row["新系统字段标签名"])}\n";
+            return $"       {Cast.ConToString(row["老系统表名简化"])}.{Cast.ConToString(row["老系统字段名"])} AS {Cast.ConToString(row["新系统字段名"])},  --{Cast.ConToString(row["新系统字段标签名"])}\n";
         }
 
         private static string GetFieldIsDatetime(DataRow row)
         {
-            return $"       {Cast.ConToString(row["老系统表名"])}.{Cast.ConToString(row["老系统字段名"])} as {Cast.ConToString(row["新系统字段名"])},  --{Cast.ConToString(row["新系统字段标签名"])}\n";
+            return $"       {Cast.ConToString(row["老系统表名简化"])}.{Cast.ConToString(row["老系统字段名"])} AS {Cast.ConToString(row["新系统字段名"])},  --{Cast.ConToString(row["新系统字段标签名"])}\n";
         }
 
         private static string GetFieldIsPicklist(DataRow row)
@@ -243,7 +260,7 @@ VALUES
             string mapping = Cast.ConToString(row["映射关系"]);
             if (string.IsNullOrWhiteSpace(mapping))
             {
-                return $"       {Cast.ConToString(row["老系统表名"])}.{Cast.ConToString(row["老系统字段名"])} as {Cast.ConToString(row["新系统字段名"])},  --{Cast.ConToString(row["新系统字段标签名"])}\n";
+                return $"       {Cast.ConToString(row["老系统表名简化"])}.{Cast.ConToString(row["老系统字段名"])} AS {Cast.ConToString(row["新系统字段名"])},  --{Cast.ConToString(row["新系统字段标签名"])}\n";
             }
 
             var mappingList = mapping.Replace("；", ";").Trim().Split(';');
@@ -265,11 +282,11 @@ VALUES
                         {
                             if(index == 0)
                             {
-                                builder.Append($"       CASE WHEN {Cast.ConToString(row["老系统表名"])}.{Cast.ConToString(row["老系统字段名"])} = {mappingArray[0]} THEN {mappingArray[1]}\n");
+                                builder.Append($"       CASE WHEN {Cast.ConToString(row["老系统表名简化"])}.{Cast.ConToString(row["老系统字段名"])} = {mappingArray[0]} THEN {mappingArray[1]}\n");
                             }
                             else
                             {
-                                builder.Append($"           WHEN {Cast.ConToString(row["老系统表名"])}.{Cast.ConToString(row["老系统字段名"])} = {mappingArray[0]} THEN {mappingArray[1]}\n");
+                                builder.Append($"           WHEN {Cast.ConToString(row["老系统表名简化"])}.{Cast.ConToString(row["老系统字段名"])} = {mappingArray[0]} THEN {mappingArray[1]}\n");
                             }
                         }
                         else
@@ -277,31 +294,31 @@ VALUES
                             var picklistArr = mappingArray[0].Split('/');
                             if (index == 0)
                             {
-                                builder.Append($"       CASE WHEN {Cast.ConToString(row["老系统表名"])}.{Cast.ConToString(row["老系统字段名"])} IN ({string.Join(',', picklistArr)}) THEN {mappingArray[1]}\n");
+                                builder.Append($"       CASE WHEN {Cast.ConToString(row["老系统表名简化"])}.{Cast.ConToString(row["老系统字段名"])} IN ({string.Join(',', picklistArr)}) THEN {mappingArray[1]}\n");
                             }
                             else
                             {
-                                builder.Append($"           WHEN {Cast.ConToString(row["老系统表名"])}.{Cast.ConToString(row["老系统字段名"])} IN ({string.Join(',', picklistArr)}) THEN {mappingArray[1]}\n");
+                                builder.Append($"           WHEN {Cast.ConToString(row["老系统表名简化"])}.{Cast.ConToString(row["老系统字段名"])} IN ({string.Join(',', picklistArr)}) THEN {mappingArray[1]}\n");
                             }
                         }
                     }
                 }
                 index++;
             }
-            builder.Append($"       ELSE NULL END AS {Cast.ConToString(row["新系统字段名"])},  --{Cast.ConToString(row["新系统字段标签名"])}\n");
+            builder.Append($"           ELSE NULL END AS {Cast.ConToString(row["新系统字段名"])},  --{Cast.ConToString(row["新系统字段标签名"])}\n");
             return builder.ToString();
         }
 
         private static void GetFieldIsLookup(DataRow row, string dbName, StringBuilder bodyBuilder_old, StringBuilder endBuilder_old, StringBuilder bodyBuilder_new, StringBuilder endBuilder_new, LookupEntityModels models)
         {
-            bodyBuilder_old.Append($"       {Cast.ConToString(row["老系统关联到"])}.{Cast.ConToString(row["老系统关联到字段"])} AS {Cast.ConToString(row["老系统表名"])}_{Cast.ConToString(row["老系统关联到字段"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
-            endBuilder_old.Append($"    LEFT JOIN {dbName}.{Cast.ConToString(row["老系统关联到"])}Base AS {Cast.ConToString(row["老系统关联到"])} ON {Cast.ConToString(row["老系统关联到"])}id = {Cast.ConToString(row["老系统表名"])}.{Cast.ConToString(row["老系统字段名"])}\n");
+            bodyBuilder_old.Append($"       {GetTableName(Cast.ConToString(row["老系统关联到"]))}.{Cast.ConToString(row["老系统关联到字段"])} AS {Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
+            endBuilder_old.Append($"    LEFT JOIN {dbName}.{Cast.ConToString(row["老系统关联到"])}Base AS {GetTableName(Cast.ConToString(row["老系统关联到"]))} ON {GetTableName(Cast.ConToString(row["老系统关联到"]))}.{Cast.ConToString(row["老系统关联到"])}id = {GetTableName(Cast.ConToString(row["老系统表名"]))}.{Cast.ConToString(row["老系统字段名"])}\n");
 
 
-            var oldModels = models?.OldModels?.Where(x => x.EntityName == Cast.ConToString(row["老系统关联到"])).ToList();//&& (x.Key != Cast.ConToString(row["老系统关联到字段"]) || x.Value != Cast.ConToString(row["老系统字段名"]))
-            var lists = (from model in models?.OldModels
-                        where model.EntityName == Cast.ConToString(row["老系统关联到"]) && model.Key != Cast.ConToString(row["老系统关联到字段"])
-                        select model).ToList();
+            //var oldModels = models?.OldModels?.Where(x => x.EntityName == Cast.ConToString(row["老系统关联到"])).ToList();//&& (x.Key != Cast.ConToString(row["老系统关联到字段"]) || x.Value != Cast.ConToString(row["老系统字段名"]))
+            //var lists = (from model in models?.OldModels
+            //            where model.EntityName == Cast.ConToString(row["老系统关联到"]) && model.Key != Cast.ConToString(row["老系统关联到字段"])
+            //            select model).ToList();
 
             //if (oldModels?.Count == 0 )
             //{
@@ -338,8 +355,8 @@ VALUES
                        //    }
                        //}
 
-            bodyBuilder_new.Append($"       {Cast.ConToString(row["新系统关联到"])}.{Cast.ConToString(row["新系统关联到"])}id AS {Cast.ConToString(row["新系统字段名"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
-            endBuilder_new.Append($"    LEFT JOIN {Cast.ConToString(row["新系统关联到"])}Base AS {Cast.ConToString(row["新系统关联到"])} ON {Cast.ConToString(row["新系统关联到"])}.{Cast.ConToString(row["新系统关联到字段"])} = main.{Cast.ConToString(row["老系统表名"])}_{Cast.ConToString(row["老系统关联到字段"])}\n");
+            bodyBuilder_new.Append($"       {GetTableName(Cast.ConToString(row["新系统关联到"]))}.{Cast.ConToString(row["新系统关联到"])}id AS {Cast.ConToString(row["新系统字段名"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
+            endBuilder_new.Append($"    LEFT JOIN {Cast.ConToString(row["新系统关联到"])}Base AS {GetTableName(Cast.ConToString(row["新系统关联到"]))} ON {GetTableName(Cast.ConToString(row["新系统关联到"]))}.{Cast.ConToString(row["新系统关联到字段"])} = main.{Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])} AND {GetTableName(Cast.ConToString(row["新系统关联到"]))}.statecode = 0\n");
         }
 
         public static void SaveToTxt(string content, string filePath, bool append = false)
@@ -354,6 +371,17 @@ VALUES
                 File.WriteAllText(filePath, content);
 
             Console.WriteLine("成功!文件输出地址：" + filePath);
+        }
+
+        private static string GetTableName(string tableName)
+        {
+            int lastUnderscoreIndex = tableName.LastIndexOf('_');
+
+            string result = lastUnderscoreIndex >= 0 && lastUnderscoreIndex < tableName.Length - 1
+                ? tableName.Substring(lastUnderscoreIndex + 1)
+                : tableName;
+
+            return result;
         }
 
     }
