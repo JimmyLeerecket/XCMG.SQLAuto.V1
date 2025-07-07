@@ -162,9 +162,9 @@ namespace XCMG.SQLAuto.V1
                 string SQL = $@"
 SELECT * INTO {orgName}_{Cast.ConToString(rowFirst["老系统表名"])} FROM(
     SELECT
-       {Cast.ConToString(rowFirst["老系统表名"])}id AS new_oldid,
+       {GetTableName(Cast.ConToString(rowFirst["老系统表名"]))}.{Cast.ConToString(rowFirst["老系统表名"])}id AS new_oldid,
        owner.address1_telephone1 AS ownerid_address1_telephone1,
-{builderBody.ToString()}{endBuilder.ToString()})t";
+{builderBody.ToString()}{endBuilder.ToString()})t;";
 
                 string SQL_new = $@"
 MERGE INTO {Cast.ConToString(rowFirst["新系统表名"])}Base t1
@@ -212,7 +212,7 @@ VALUES
    8,
    isnull(t2.new_systemuser_id,(SELECT SystemUserid FROM SystemUser WHERE fullname = '{adminName}')),
    isnull((SELECT businessunitid FROM SystemUser WHERE systemuserid = t2.new_systemuser_id),(SELECT businessunitid FROM SystemUser WHERE fullname = '{adminName}'))
-)";
+);";
 
                 //string outputPath = "C:\\Mac\\Home\\Desktop\\jimmyli\\Import\\Output\\SQL_0605.txt";
                 Console.WriteLine("请在下方输入文件名：");
