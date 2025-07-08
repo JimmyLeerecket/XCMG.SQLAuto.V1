@@ -60,8 +60,8 @@ namespace XCMG.SQLAuto.V1
                     dataRow["老系统关联到"] = row.GetCell(9)?.ToString()?.Trim() ?? string.Empty;
                     dataRow["匹配逻辑补充说明"] = row.GetCell(10)?.ToString()?.Trim() ?? string.Empty;
                     dataRow["备注"] = row.GetCell(11)?.ToString()?.Trim() ?? string.Empty;
-                    dataRow["新系统关联到字段"] = GetRelationshipName(row.GetCell(10)?.ToString()?.Trim() ?? string.Empty);
-                    dataRow["老系统关联到字段"] = GetRelationshipName(row.GetCell(10)?.ToString()?.Trim() ?? string.Empty, 1);
+                    dataRow["新系统关联到字段"] = GetRelationshipName(row.GetCell(10)?.ToString()?.Trim() ?? string.Empty, 1);
+                    dataRow["老系统关联到字段"] = GetRelationshipName(row.GetCell(10)?.ToString()?.Trim() ?? string.Empty, 0);
                     dataRow["新系统表名"] = sheet.GetRow(1).GetCell(14)?.ToString()?.Trim() ?? string.Empty;
                     dataRow["数据库地址"] = sheet.GetRow(1).GetCell(15)?.ToString()?.Trim() ?? string.Empty;
                     dataRow["销售组织"] = sheet.GetRow(1).GetCell(16)?.ToString()?.Trim() ?? string.Empty;
