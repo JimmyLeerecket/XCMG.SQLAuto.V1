@@ -60,15 +60,15 @@ namespace XCMG.SQLAuto.V1
                     dataRow["老系统关联到"] = row.GetCell(9)?.ToString()?.Trim() ?? string.Empty;
                     dataRow["匹配逻辑补充说明"] = row.GetCell(10)?.ToString()?.Trim() ?? string.Empty;
                     dataRow["备注"] = row.GetCell(11)?.ToString()?.Trim() ?? string.Empty;
-                    dataRow["新系统关联到字段"] = row.GetCell(12)?.ToString()?.Trim() ?? string.Empty;
-                    dataRow["老系统关联到字段"] = row.GetCell(13)?.ToString()?.Trim() ?? string.Empty;
+                    dataRow["新系统关联到字段"] = GetRelationshipName(row.GetCell(10)?.ToString()?.Trim() ?? string.Empty);
+                    dataRow["老系统关联到字段"] = GetRelationshipName(row.GetCell(10)?.ToString()?.Trim() ?? string.Empty, 1);
                     dataRow["新系统表名"] = sheet.GetRow(1).GetCell(14)?.ToString()?.Trim() ?? string.Empty;
                     dataRow["数据库地址"] = sheet.GetRow(1).GetCell(15)?.ToString()?.Trim() ?? string.Empty;
                     dataRow["销售组织"] = sheet.GetRow(1).GetCell(16)?.ToString()?.Trim() ?? string.Empty;
                     dataRow["映射关系"] = row.GetCell(10)?.ToString()?.Trim() ?? string.Empty;
                     dataRow["销售组织管理员"] = sheet.GetRow(1).GetCell(18)?.ToString()?.Trim() ?? string.Empty;
                     dataRow["老系统表名简化"] = GetTableName(sheet.GetRow(1).GetCell(6)?.ToString()?.Trim() ?? string.Empty);
-                    
+
                     dt.Rows.Add(dataRow);
                 }
                 
@@ -382,6 +382,17 @@ VALUES
                 : tableName;
 
             return result;
+        }
+
+        private static string GetRelationshipName(string relationshipName, int index = 0)
+        {
+            var mappingArray = relationshipName.Split("=");
+            if(mappingArray.Length == 2)
+            {
+                return mappingArray[index].Trim().ToLower();
+            }
+
+            return "new_code";
         }
 
     }
