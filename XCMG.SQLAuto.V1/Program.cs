@@ -6,9 +6,9 @@ public partial class Program
     static void Main(string[] args)
     {
         // 生成统计单
-        string filePath = "C:\\Mac\\Home\\Desktop\\jimmyli\\Import\\Input\\SQL导入模版.xlsx";
+        string filePath = "C:\\Mac\\Home\\Desktop\\jimmyli\\Import\\Input\\SQL导入模版_KAJ补充.xlsx";
         Helper.ImportExcel(filePath);
-
+        
         //var currentThread = Thread.CurrentThread;
         //Console.WriteLine("线程标识：" + currentThread.Name);
         //Console.WriteLine("当前地域：" + currentThread.CurrentCulture.Name);

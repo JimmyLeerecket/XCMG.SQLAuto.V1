@@ -164,7 +164,8 @@ SELECT * INTO {orgName}_{Cast.ConToString(rowFirst["老系统表名"])} FROM(
     SELECT
        {GetTableName(Cast.ConToString(rowFirst["老系统表名"]))}.{Cast.ConToString(rowFirst["老系统表名"])}id AS new_oldid,
        owner.address1_telephone1 AS ownerid_address1_telephone1,
-{builderBody.ToString()}{endBuilder.ToString()})t;";
+{builderBody.ToString()}{endBuilder.ToString()}    WHERE {GetTableName(Cast.ConToString(rowFirst["老系统表名"]))}.statecode = 0
+)t;";
 
                 string SQL_new = $@"
 MERGE INTO {Cast.ConToString(rowFirst["新系统表名"])}Base t1
@@ -191,6 +192,7 @@ INSERT
 (
 {insertBuilder.ToString()}
    {Cast.ConToString(rowFirst["新系统表名"])}id,
+   new_oldid,
    statecode,
    CreatedOn,
    ModifiedOn,
@@ -204,6 +206,7 @@ VALUES
 (
 {insertBuilder_New.ToString()}
    newid(),
+   t2.new_oldid,
    t2.statecode,
    t2.CreatedOn,
    t2.ModifiedOn,
