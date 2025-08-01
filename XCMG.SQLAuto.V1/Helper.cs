@@ -100,7 +100,10 @@ namespace XCMG.SQLAuto.V1
                 LookupEntityModels models = new LookupEntityModels();
                 StringBuilder bodyBuilder_New = new StringBuilder();
                 StringBuilder endBuilder_New = new StringBuilder();
-                endBuilder_New.Append($"FROM {orgName}_{Cast.ConToString(rowFirst["老系统表名"])} main\n");
+                endBuilder_New.Append(@$"FROM {orgName}_{Cast.ConToString(rowFirst["老系统表名"])} main
+    INNER JOIN businessunit AS businessunit ON businessunit.name = '{GetOrgName(orgName)}' AND businessunit.isdisabled = 0
+    LEFT JOIN Systemuser AS owner ON owner.address1_telephone1 = main.ownerid_address1_telephone1 AND owner.isdisabled = 0 AND owner.new_organization_id = businessunit.businessunitid
+");
 
                 StringBuilder updataBuilder = new StringBuilder();
                 StringBuilder insertBuilder = new StringBuilder();
@@ -173,7 +176,7 @@ USING(
     SELECT
 {bodyBuilder_New.ToString()}       main.*,
        owner.systemuserid AS new_systemuser_id
-    {endBuilder_New.ToString()}    LEFT JOIN Systemuser AS owner ON owner.address1_telephone1 = main.ownerid_address1_telephone1 AND owner.isdisabled = 0
+    {endBuilder_New.ToString()}
 ) t2
 ON(t1.new_oldid = t2.new_oldid)
 WHEN MATCHED THEN
@@ -359,7 +362,14 @@ VALUES
                        //}
 
             bodyBuilder_new.Append($"       {GetTableName(Cast.ConToString(row["新系统关联到"]))}.{Cast.ConToString(row["新系统关联到"])}id AS {Cast.ConToString(row["新系统字段名"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
-            endBuilder_new.Append($"    LEFT JOIN {Cast.ConToString(row["新系统关联到"])}Base AS {GetTableName(Cast.ConToString(row["新系统关联到"]))} ON {GetTableName(Cast.ConToString(row["新系统关联到"]))}.{Cast.ConToString(row["新系统关联到字段"])} = main.{Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])} AND {GetTableName(Cast.ConToString(row["新系统关联到"]))}.statecode = 0\n");
+            if(Cast.ConToString(row["新系统关联到"])== "new_srv_station" || Cast.ConToString(row["新系统关联到"]) == "new_srv_worker" || Cast.ConToString(row["新系统关联到"]) == "new_accountstaff")
+            {
+                endBuilder_new.Append($"    LEFT JOIN {Cast.ConToString(row["新系统关联到"])}Base AS {GetTableName(Cast.ConToString(row["新系统关联到"]))} ON {GetTableName(Cast.ConToString(row["新系统关联到"]))}.{Cast.ConToString(row["新系统关联到字段"])} = main.{Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])} AND {GetTableName(Cast.ConToString(row["新系统关联到"]))}.new_organization_id = businessunit.businessunitid AND {GetTableName(Cast.ConToString(row["新系统关联到"]))}.statecode = 0\n");
+            }
+            else
+            {
+                endBuilder_new.Append($"    LEFT JOIN {Cast.ConToString(row["新系统关联到"])}Base AS {GetTableName(Cast.ConToString(row["新系统关联到"]))} ON {GetTableName(Cast.ConToString(row["新系统关联到"]))}.{Cast.ConToString(row["新系统关联到字段"])} = main.{Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])} AND {GetTableName(Cast.ConToString(row["新系统关联到"]))}.statecode = 0\n");
+            }
         }
 
         public static void SaveToTxt(string content, string filePath, bool append = false)
@@ -398,5 +408,24 @@ VALUES
             return "new_code";
         }
 
+        private static string GetOrgName(string orgName)
+        {
+            if (orgName.Contains("KAJ"))
+            {
+                return "徐工矿机";
+            }
+            else if (orgName.Contains("DL"))
+            {
+                return "徐工道路";
+            }
+            else if (orgName.Contains("CQ"))
+            {
+                return "徐工重庆";
+            }
+            else
+            {
+                return orgName;
+            }
+        }
     }
 }
