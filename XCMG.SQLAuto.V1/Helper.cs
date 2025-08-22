@@ -7,8 +7,10 @@ using System;
 using System.Data;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using static NPOI.HSSF.Util.HSSFColor;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace XCMG.SQLAuto.V1
 {
@@ -317,59 +319,36 @@ VALUES
 
         private static void GetFieldIsLookup(DataRow row, string dbName, StringBuilder bodyBuilder_old, StringBuilder endBuilder_old, StringBuilder bodyBuilder_new, StringBuilder endBuilder_new, LookupEntityModels models)
         {
-            bodyBuilder_old.Append($"       {GetTableName(Cast.ConToString(row["老系统关联到"]))}.{Cast.ConToString(row["老系统关联到字段"])} AS {Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
-            endBuilder_old.Append($"    LEFT JOIN {dbName}.{Cast.ConToString(row["老系统关联到"])}Base AS {GetTableName(Cast.ConToString(row["老系统关联到"]))} ON {GetTableName(Cast.ConToString(row["老系统关联到"]))}.{Cast.ConToString(row["老系统关联到"])}id = {GetTableName(Cast.ConToString(row["老系统表名"]))}.{Cast.ConToString(row["老系统字段名"])}\n");
-
-
-            //var oldModels = models?.OldModels?.Where(x => x.EntityName == Cast.ConToString(row["老系统关联到"])).ToList();//&& (x.Key != Cast.ConToString(row["老系统关联到字段"]) || x.Value != Cast.ConToString(row["老系统字段名"]))
-            //var lists = (from model in models?.OldModels
-            //            where model.EntityName == Cast.ConToString(row["老系统关联到"]) && model.Key != Cast.ConToString(row["老系统关联到字段"])
-            //            select model).ToList();
-
-            //if (oldModels?.Count == 0 )
-            //{
-            //    bodyBuilder_old.Append($"       {Cast.ConToString(row["老系统关联到"])}.{Cast.ConToString(row["老系统关联到字段"])} AS {Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
-            //    endBuilder_old.Append($"    LEFT JOIN {dbName}.{Cast.ConToString(row["老系统关联到"])}Base AS {Cast.ConToString(row["老系统关联到"])} ON {Cast.ConToString(row["老系统关联到"])}id = {Cast.ConToString(row["老系统表名"])}.{Cast.ConToString(row["老系统字段名"])}\n");
-
-                       //    var oldList = new List<LookupEntityModel>();
-                       //    var oldModel = new LookupEntityModel
-                       //    {
-                       //        EntityName = Cast.ConToString(row["老系统关联到"]),
-                       //        Key = Cast.ConToString(row["老系统关联到字段"]),
-                       //        Value = Cast.ConToString(row["老系统字段名"]),
-                       //    };
-
-                       //    models?.OldModels.Add(oldModel);
-                       //}
-                       //else
-                       //{
-                       //    foreach ( var oldModel in oldModels)
-                       //    {
-                       //        if (oldModel.Key != Cast.ConToString(row["老系统关联到字段"]))
-                       //        {
-                       //            bodyBuilder_old.Append($"       {Cast.ConToString(row["老系统关联到"])}.{Cast.ConToString(row["老系统关联到字段"])} AS {Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
-                       //        }
-                       //        else if (oldModel.Value != Cast.ConToString(row["老系统字段名"]))
-                       //        {
-                       //            bodyBuilder_old.Append($"       {Cast.ConToString(row["老系统关联到"])}.{Cast.ConToString(row["老系统关联到字段"])} AS {Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
-                       //            endBuilder_old.Append($"    LEFT JOIN {dbName}.{Cast.ConToString(row["老系统关联到"])}Base AS {Cast.ConToString(row["老系统关联到"])} ON {Cast.ConToString(row["老系统关联到"])}id = {Cast.ConToString(row["老系统表名"])}.{Cast.ConToString(row["老系统字段名"])}\n");
-                       //        }
-                       //        else
-                       //        {
-
-                       //        }
-                       //    }
-                       //}
-
-            bodyBuilder_new.Append($"       {GetTableName(Cast.ConToString(row["新系统关联到"]))}.{Cast.ConToString(row["新系统关联到"])}id AS {Cast.ConToString(row["新系统字段名"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
-            if(Cast.ConToString(row["新系统关联到"])== "new_srv_station" || Cast.ConToString(row["新系统关联到"]) == "new_srv_worker" || Cast.ConToString(row["新系统关联到"]) == "new_accountstaff")
+            int oldcount = 0;
+            string oldTableName = Cast.ConToString(row["老系统关联到"]) + "Base";
+            if (!string.IsNullOrWhiteSpace(endBuilder_old.ToString()))
             {
-                endBuilder_new.Append($"    LEFT JOIN {Cast.ConToString(row["新系统关联到"])}Base AS {GetTableName(Cast.ConToString(row["新系统关联到"]))} ON {GetTableName(Cast.ConToString(row["新系统关联到"]))}.{Cast.ConToString(row["新系统关联到字段"])} = main.{Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])} AND {GetTableName(Cast.ConToString(row["新系统关联到"]))}.new_organization_id = businessunit.businessunitid AND {GetTableName(Cast.ConToString(row["新系统关联到"]))}.statecode = 0\n");
+                oldcount = Regex.Matches(endBuilder_old.ToString(), Regex.Escape(oldTableName)).Count;
             }
-            else
+            string oldTableNameJX = GetTableName(Cast.ConToString(row["老系统关联到"]));
+            if (oldcount > 0)
             {
-                endBuilder_new.Append($"    LEFT JOIN {Cast.ConToString(row["新系统关联到"])}Base AS {GetTableName(Cast.ConToString(row["新系统关联到"]))} ON {GetTableName(Cast.ConToString(row["新系统关联到"]))}.{Cast.ConToString(row["新系统关联到字段"])} = main.{Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])} AND {GetTableName(Cast.ConToString(row["新系统关联到"]))}.statecode = 0\n");
+                oldTableNameJX = oldTableNameJX + oldcount.ToString();
             }
+            bodyBuilder_old.Append($"       {oldTableNameJX}.{Cast.ConToString(row["老系统关联到字段"])} AS {Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
+            endBuilder_old.Append($"    LEFT JOIN {dbName}.{Cast.ConToString(row["老系统关联到"])}Base AS {oldTableNameJX} ON {oldTableNameJX}.{Cast.ConToString(row["老系统关联到"])}id = {oldTableNameJX}.{Cast.ConToString(row["老系统字段名"])}\n");
+
+
+            int newcount = 0;
+            string newTableName = Cast.ConToString(row["新系统关联到"]) + "Base";
+            if (!string.IsNullOrWhiteSpace(endBuilder_new.ToString()))
+            {
+                newcount = Regex.Matches(endBuilder_new.ToString(), Regex.Escape(newTableName)).Count;
+            }
+            Console.WriteLine($"newTableName:{newTableName}, newcount:{newcount}");
+            string newTableNameJX = GetTableName(Cast.ConToString(row["新系统关联到"]));
+            if (newcount > 0)
+            {
+                newTableNameJX = newTableNameJX + newcount.ToString();
+            }
+            bodyBuilder_new.Append($"       {newTableNameJX}.{Cast.ConToString(row["新系统关联到"])}id AS {Cast.ConToString(row["新系统字段名"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
+            bool isNeedOrg = Cast.ConToString(row["新系统关联到"]) == "new_srv_station" || Cast.ConToString(row["新系统关联到"]) == "new_srv_worker" || Cast.ConToString(row["新系统关联到"]) == "new_accountstaff" || Cast.ConToString(row["新系统关联到"]) == "new_dot_conditiont";
+            endBuilder_new.Append($"    LEFT JOIN {Cast.ConToString(row["新系统关联到"])}Base AS {newTableNameJX} ON {newTableNameJX}.{Cast.ConToString(row["新系统关联到字段"])} = main.{Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])} {(isNeedOrg ? ("AND " + newTableNameJX + ".new_organization_id = businessunit.businessunitid ") : "")}AND {newTableNameJX}.statecode = 0\n");
         }
 
         public static void SaveToTxt(string content, string filePath, bool append = false)
