@@ -156,7 +156,7 @@ namespace XCMG.SQLAuto.V1
                             break;
 
                         case "lookup":
-                            GetFieldIsLookup(row, dbName, builderBody, endBuilder, bodyBuilder_New, endBuilder_New, models);
+                            GetFieldIsLookup(row, dbName, builderBody, endBuilder, bodyBuilder_New, endBuilder_New, models, main);
                             break;
                         default:
                             builderBody.Append($"--{Cast.ConToString(row["新系统字段名"])},  --{Cast.ConToString(row["新系统字段标签名"])}\n");
@@ -321,9 +321,10 @@ VALUES
             return builder.ToString();
         }
 
-        private static void GetFieldIsLookup(DataRow row, string dbName, StringBuilder bodyBuilder_old, StringBuilder endBuilder_old, StringBuilder bodyBuilder_new, StringBuilder endBuilder_new, LookupEntityModels models)
+        private static void GetFieldIsLookup(DataRow row, string dbName, StringBuilder bodyBuilder_old, StringBuilder endBuilder_old, StringBuilder bodyBuilder_new, StringBuilder endBuilder_new, LookupEntityModels models, string olddbnameJX)
         {
             int oldcount = 0;
+            string newTableNameJX = Cast.ConToString(row["新系统关联到"]);
             string oldTableName = Cast.ConToString(row["老系统关联到"]) + "Base";
             if (!string.IsNullOrWhiteSpace(endBuilder_old.ToString()))
             {
@@ -335,7 +336,7 @@ VALUES
                 oldTableNameJX = oldTableNameJX + oldcount.ToString();
             }
             bodyBuilder_old.Append($"       {oldTableNameJX}.{Cast.ConToString(row["老系统关联到字段"])} AS {Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
-            endBuilder_old.Append($"    LEFT JOIN {dbName}.{Cast.ConToString(row["老系统关联到"])}Base AS {oldTableNameJX} ON {oldTableNameJX}.{Cast.ConToString(row["老系统关联到"])}id = {oldTableNameJX}.{Cast.ConToString(row["老系统字段名"])}\n");
+            endBuilder_old.Append($"    LEFT JOIN {dbName}.{Cast.ConToString(row["老系统关联到"])}Base AS {oldTableNameJX} ON {oldTableNameJX}.{Cast.ConToString(row["老系统关联到"])}id = {olddbnameJX}.{Cast.ConToString(row["老系统字段名"])}\n");
 
 
             int newcount = 0;
@@ -345,7 +346,7 @@ VALUES
                 newcount = Regex.Matches(endBuilder_new.ToString(), Regex.Escape(newTableName)).Count;
             }
             Console.WriteLine($"newTableName:{newTableName}, newcount:{newcount}");
-            string newTableNameJX = GetTableName(Cast.ConToString(row["新系统关联到"]));
+            
             if (newcount > 0)
             {
                 newTableNameJX = newTableNameJX + newcount.ToString();
