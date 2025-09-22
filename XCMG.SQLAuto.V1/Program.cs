@@ -7,7 +7,7 @@ public partial class Program
     static void Main(string[] args)
     {
         // 生成统计单
-        string filePath = "C:\\Mac\\Home\\Desktop\\jimmyli\\Import\\Input\\SQL导入模版_DL.xlsx";
+        string filePath = "C:\\Mac\\Home\\Desktop\\jimmyli\\20250919功能推广第二批数据迁移-1030\\徐工环境\\SQL导入模版_HJ_0922.xlsx";
         Helper.ImportExcel(filePath);
 
         //var currentThread = Thread.CurrentThread;

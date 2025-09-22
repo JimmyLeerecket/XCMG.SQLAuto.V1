@@ -16,6 +16,8 @@ namespace XCMG.SQLAuto.V1
 {
     public static class Helper
     {
+        static string sheetName = string.Empty;
+
         public static void ImportExcel(string filePath)
         {
             DataTable dt = new DataTable();
@@ -44,7 +46,9 @@ namespace XCMG.SQLAuto.V1
             {
                 IWorkbook workbook = new XSSFWorkbook(fs); // HSSFWorkbook 用于 .xls
                 ISheet sheet = workbook.GetSheetAt(0);
-                
+                int sheetIndex = workbook.GetSheetIndex(sheet);
+                sheetName = workbook.GetSheetName(sheetIndex);   // 新系统表名
+
                 for (int i = 1; i <= sheet.LastRowNum; i++) // 跳过表头
                 {
                     IRow row = sheet.GetRow(i);
@@ -64,7 +68,7 @@ namespace XCMG.SQLAuto.V1
                     dataRow["备注"] = row.GetCell(11)?.ToString()?.Trim() ?? string.Empty;
                     dataRow["新系统关联到字段"] = GetRelationshipName(row.GetCell(10)?.ToString()?.Trim() ?? string.Empty, 1);
                     dataRow["老系统关联到字段"] = GetRelationshipName(row.GetCell(10)?.ToString()?.Trim() ?? string.Empty, 0);
-                    dataRow["新系统表名"] = sheet.GetRow(1).GetCell(14)?.ToString()?.Trim() ?? string.Empty;
+                    dataRow["新系统表名"] = sheetName;   // sheet.GetRow(1).GetCell(14)?.ToString()?.Trim() ?? string.Empty;
                     dataRow["数据库地址"] = sheet.GetRow(1).GetCell(15)?.ToString()?.Trim() ?? string.Empty;
                     dataRow["销售组织"] = sheet.GetRow(1).GetCell(16)?.ToString()?.Trim() ?? string.Empty;
                     dataRow["映射关系"] = row.GetCell(10)?.ToString()?.Trim() ?? string.Empty;
