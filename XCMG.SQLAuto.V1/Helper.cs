@@ -102,7 +102,7 @@ namespace XCMG.SQLAuto.V1
        {main}.CreatedBy,
        {main}.CreatedOn,
        {main}.statecode
-    FROM {dbName}.{Cast.ConToString(rowFirst["老系统表名"])}Base AS {GetTableName(Cast.ConToString(rowFirst["老系统表名"]))}
+    FROM {dbName}.{Cast.ConToString(rowFirst["老系统表名"])} AS {GetTableName(Cast.ConToString(rowFirst["老系统表名"]))}
     LEFT JOIN {dbName}.Systemuser AS owner ON owner.systemuserid = {GetTableName(Cast.ConToString(rowFirst["老系统表名"]))}.ownerid
 ");
                 LookupEntityModels models = new LookupEntityModels();
@@ -350,7 +350,9 @@ VALUES
                 newTableNameJX = newTableNameJX + newcount.ToString();
             }
             bodyBuilder_new.Append($"       {newTableNameJX}.{Cast.ConToString(row["新系统关联到"])}id AS {Cast.ConToString(row["新系统字段名"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
-            bool isNeedOrg = Cast.ConToString(row["新系统关联到"]) == "new_srv_station" || Cast.ConToString(row["新系统关联到"]) == "new_srv_worker" || Cast.ConToString(row["新系统关联到"]) == "new_accountstaff" || Cast.ConToString(row["新系统关联到"]) == "new_dot_conditiont";
+            bool isNeedOrg = Cast.ConToString(row["新系统关联到"]) == "new_srv_station" || Cast.ConToString(row["新系统关联到"]) == "new_srv_worker" 
+                || Cast.ConToString(row["新系统关联到"]) == "new_accountstaff" || Cast.ConToString(row["新系统关联到"]) == "new_dot_conditiont"
+                || Cast.ConToString(row["新系统关联到"]) == "new_srv_stocksite";
             bool isSys = Cast.ConToString(row["新系统关联到"]) == "systemuser" || Cast.ConToString(row["新系统关联到"]) == "businessunit";
             endBuilder_new.Append($"    LEFT JOIN {Cast.ConToString(row["新系统关联到"])}{(isSys ? "" : "Base")} AS {newTableNameJX} ON {newTableNameJX}.{Cast.ConToString(row["新系统关联到字段"])} = main.{Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])} {(isNeedOrg ? ("AND " + newTableNameJX + ".new_organization_id = org.businessunitid ") : "")}AND {newTableNameJX}.{(isSys ? "isdisabled" : "statecode")} = 0\n");
         }
