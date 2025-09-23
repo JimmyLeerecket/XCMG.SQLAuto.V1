@@ -88,7 +88,9 @@ namespace XCMG.SQLAuto.V1
             {
                 DataRow rowFirst = baseDt.Rows[0];
                 string dbName = Cast.ConToString(rowFirst["数据库地址"]);
-                string orgName = Cast.ConToString(rowFirst["销售组织"]);
+                string orgNameList = Cast.ConToString(rowFirst["销售组织"]);
+                string orgNameJX = orgNameList.Split('=')[1];
+                string orgNameZH = orgNameList.Split('=')[0];
                 string adminName = Cast.ConToString(rowFirst["销售组织管理员"]);
 
                 StringBuilder builderBody = new StringBuilder();
@@ -106,9 +108,9 @@ namespace XCMG.SQLAuto.V1
                 LookupEntityModels models = new LookupEntityModels();
                 StringBuilder bodyBuilder_New = new StringBuilder();
                 StringBuilder endBuilder_New = new StringBuilder();
-                endBuilder_New.Append(@$"FROM {orgName}_{Cast.ConToString(rowFirst["老系统表名"])} main
-    INNER JOIN businessunit AS businessunit ON businessunit.name = '{GetOrgName(orgName)}' AND businessunit.isdisabled = 0
-    LEFT JOIN Systemuser AS owner ON owner.address1_telephone1 = main.ownerid_address1_telephone1 AND owner.isdisabled = 0 AND owner.new_organization_id = businessunit.businessunitid
+                endBuilder_New.Append(@$"FROM {orgNameJX}_{Cast.ConToString(rowFirst["老系统表名"])} main
+    INNER JOIN businessunit AS org ON org.name = '{orgNameZH}' AND org.isdisabled = 0
+    LEFT JOIN Systemuser AS owner ON owner.address1_telephone1 = main.ownerid_address1_telephone1 AND owner.isdisabled = 0 AND owner.new_organization_id = org.businessunitid
 ");
 
                 StringBuilder updataBuilder = new StringBuilder();
@@ -169,7 +171,7 @@ namespace XCMG.SQLAuto.V1
                 }
 
                 string SQL = $@"
-SELECT * INTO {orgName}_{Cast.ConToString(rowFirst["老系统表名"])} FROM(
+SELECT * INTO {orgNameJX}_{Cast.ConToString(rowFirst["老系统表名"])} FROM(
     SELECT
        {GetTableName(Cast.ConToString(rowFirst["老系统表名"]))}.{Cast.ConToString(rowFirst["老系统表名"])}id AS new_oldid,
        owner.address1_telephone1 AS ownerid_address1_telephone1,
@@ -182,13 +184,11 @@ USING(
     SELECT
 {bodyBuilder_New.ToString()}       main.*,
        owner.systemuserid AS new_systemuser_id
-    {endBuilder_New.ToString()}
-) t2
+    {endBuilder_New.ToString()}) t2
 ON(t1.new_oldid = t2.new_oldid)
 WHEN MATCHED THEN
 UPDATE SET
-{updataBuilder.ToString()}
-   statecode = t2.statecode,
+{updataBuilder.ToString()}   statecode = t2.statecode,
    CreatedOn = t2.CreatedOn,
    ModifiedOn = t2.ModifiedOn,
    ModifiedBy = isnull(t2.new_systemuser_id,(SELECT SystemUserid FROM SystemUser WHERE fullname = '{adminName}')),
@@ -199,8 +199,7 @@ UPDATE SET
 WHEN NOT MATCHED THEN
 INSERT
 (
-{insertBuilder.ToString()}
-   {Cast.ConToString(rowFirst["新系统表名"])}id,
+{insertBuilder.ToString()}   {Cast.ConToString(rowFirst["新系统表名"])}id,
    new_oldid,
    statecode,
    CreatedOn,
@@ -213,8 +212,7 @@ INSERT
 )
 VALUES
 (
-{insertBuilder_New.ToString()}
-   newid(),
+{insertBuilder_New.ToString()}   newid(),
    t2.new_oldid,
    t2.statecode,
    t2.CreatedOn,
@@ -324,7 +322,8 @@ VALUES
         private static void GetFieldIsLookup(DataRow row, string dbName, StringBuilder bodyBuilder_old, StringBuilder endBuilder_old, StringBuilder bodyBuilder_new, StringBuilder endBuilder_new, LookupEntityModels models, string olddbnameJX)
         {
             int oldcount = 0;
-            string newTableNameJX = Cast.ConToString(row["新系统关联到"]);
+            string newTableNameJX = GetTableName(Cast.ConToString(row["新系统关联到"]));
+            bool oldIsSys = Cast.ConToString(row["新系统关联到"]) == "systemuser" || Cast.ConToString(row["新系统关联到"]) == "businessunit";
             string oldTableName = Cast.ConToString(row["老系统关联到"]) + "Base";
             if (!string.IsNullOrWhiteSpace(endBuilder_old.ToString()))
             {
@@ -336,7 +335,7 @@ VALUES
                 oldTableNameJX = oldTableNameJX + oldcount.ToString();
             }
             bodyBuilder_old.Append($"       {oldTableNameJX}.{Cast.ConToString(row["老系统关联到字段"])} AS {Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
-            endBuilder_old.Append($"    LEFT JOIN {dbName}.{Cast.ConToString(row["老系统关联到"])}Base AS {oldTableNameJX} ON {oldTableNameJX}.{Cast.ConToString(row["老系统关联到"])}id = {olddbnameJX}.{Cast.ConToString(row["老系统字段名"])}\n");
+            endBuilder_old.Append($"    LEFT JOIN {dbName}.{Cast.ConToString(row["老系统关联到"])} AS {oldTableNameJX} ON {oldTableNameJX}.{Cast.ConToString(row["老系统关联到"])}id = {olddbnameJX}.{Cast.ConToString(row["老系统字段名"])}\n");
 
 
             int newcount = 0;
@@ -345,15 +344,15 @@ VALUES
             {
                 newcount = Regex.Matches(endBuilder_new.ToString(), Regex.Escape(newTableName)).Count;
             }
-            Console.WriteLine($"newTableName:{newTableName}, newcount:{newcount}");
-            
+
             if (newcount > 0)
             {
                 newTableNameJX = newTableNameJX + newcount.ToString();
             }
             bodyBuilder_new.Append($"       {newTableNameJX}.{Cast.ConToString(row["新系统关联到"])}id AS {Cast.ConToString(row["新系统字段名"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
             bool isNeedOrg = Cast.ConToString(row["新系统关联到"]) == "new_srv_station" || Cast.ConToString(row["新系统关联到"]) == "new_srv_worker" || Cast.ConToString(row["新系统关联到"]) == "new_accountstaff" || Cast.ConToString(row["新系统关联到"]) == "new_dot_conditiont";
-            endBuilder_new.Append($"    LEFT JOIN {Cast.ConToString(row["新系统关联到"])}Base AS {newTableNameJX} ON {newTableNameJX}.{Cast.ConToString(row["新系统关联到字段"])} = main.{Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])} {(isNeedOrg ? ("AND " + newTableNameJX + ".new_organization_id = businessunit.businessunitid ") : "")}AND {newTableNameJX}.statecode = 0\n");
+            bool isSys = Cast.ConToString(row["新系统关联到"]) == "systemuser" || Cast.ConToString(row["新系统关联到"]) == "businessunit";
+            endBuilder_new.Append($"    LEFT JOIN {Cast.ConToString(row["新系统关联到"])}{(isSys ? "" : "Base")} AS {newTableNameJX} ON {newTableNameJX}.{Cast.ConToString(row["新系统关联到字段"])} = main.{Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])} {(isNeedOrg ? ("AND " + newTableNameJX + ".new_organization_id = org.businessunitid ") : "")}AND {newTableNameJX}.{(isSys ? "isdisabled" : "statecode")} = 0\n");
         }
 
         public static void SaveToTxt(string content, string filePath, bool append = false)
