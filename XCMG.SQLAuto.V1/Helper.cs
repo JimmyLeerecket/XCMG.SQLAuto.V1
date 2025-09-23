@@ -354,7 +354,12 @@ VALUES
                 || Cast.ConToString(row["新系统关联到"]) == "new_accountstaff" || Cast.ConToString(row["新系统关联到"]) == "new_dot_conditiont"
                 || Cast.ConToString(row["新系统关联到"]) == "new_srv_stocksite";
             bool isSys = Cast.ConToString(row["新系统关联到"]) == "systemuser" || Cast.ConToString(row["新系统关联到"]) == "businessunit";
-            endBuilder_new.Append($"    LEFT JOIN {Cast.ConToString(row["新系统关联到"])}{(isSys ? "" : "Base")} AS {newTableNameJX} ON {newTableNameJX}.{Cast.ConToString(row["新系统关联到字段"])} = main.{Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])} {(isNeedOrg ? ("AND " + newTableNameJX + ".new_organization_id = org.businessunitid ") : "")}AND {newTableNameJX}.{(isSys ? "isdisabled" : "statecode")} = 0\n");
+            string orgName = "new_organization_id";
+            if(Cast.ConToString(row["新系统关联到"]) == "new_srv_stocksite")
+            {
+                orgName = "new_organisation_id";
+            }
+            endBuilder_new.Append($"    LEFT JOIN {Cast.ConToString(row["新系统关联到"])}{(isSys ? "" : "Base")} AS {newTableNameJX} ON {newTableNameJX}.{Cast.ConToString(row["新系统关联到字段"])} = main.{Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])} {(isNeedOrg ? ("AND " + newTableNameJX + $".{orgName} = org.businessunitid ") : "")}AND {newTableNameJX}.{(isSys ? "isdisabled" : "statecode")} = 0\n");
         }
 
         public static void SaveToTxt(string content, string filePath, bool append = false)
