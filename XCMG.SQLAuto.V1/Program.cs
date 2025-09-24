@@ -19,6 +19,11 @@ public partial class Program
 
         // LINQ
         // LINQ.SelectNewObject();
+
+        //Console.WriteLine("请在下方输入您的年龄：");
+        //var age = Console.ReadLine();
+        //string healthMsg = Health.GetFatBurningHeartRateZone(age);
+        //Console.WriteLine(healthMsg);
     }
 }
 
