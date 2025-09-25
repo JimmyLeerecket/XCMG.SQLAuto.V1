@@ -102,7 +102,7 @@ namespace XCMG.SQLAuto.V1
        {main}.CreatedBy,
        {main}.CreatedOn,
        {main}.statecode
-    FROM {dbName}.{Cast.ConToString(rowFirst["老系统表名"])} AS {GetTableName(Cast.ConToString(rowFirst["老系统表名"]))}
+    FROM {dbName}.{Cast.ConToString(rowFirst["老系统表名"])}Base AS {GetTableName(Cast.ConToString(rowFirst["老系统表名"]))}
     LEFT JOIN {dbName}.Systemuser AS owner ON owner.systemuserid = {GetTableName(Cast.ConToString(rowFirst["老系统表名"]))}.ownerid
 ");
                 LookupEntityModels models = new LookupEntityModels();
@@ -335,7 +335,7 @@ VALUES
                 oldTableNameJX = oldTableNameJX + oldcount.ToString();
             }
             bodyBuilder_old.Append($"       {oldTableNameJX}.{Cast.ConToString(row["老系统关联到字段"])} AS {Cast.ConToString(row["老系统字段名"])}_{Cast.ConToString(row["老系统关联到字段"])},    --{Cast.ConToString(row["新系统字段标签名"])}\n");
-            endBuilder_old.Append($"    LEFT JOIN {dbName}.{Cast.ConToString(row["老系统关联到"])} AS {oldTableNameJX} ON {oldTableNameJX}.{Cast.ConToString(row["老系统关联到"])}id = {olddbnameJX}.{Cast.ConToString(row["老系统字段名"])}\n");
+            endBuilder_old.Append($"    LEFT JOIN {dbName}.{Cast.ConToString(row["老系统关联到"])}Base AS {oldTableNameJX} ON {oldTableNameJX}.{Cast.ConToString(row["老系统关联到"])}id = {olddbnameJX}.{Cast.ConToString(row["老系统字段名"])}\n");
 
 
             int newcount = 0;
