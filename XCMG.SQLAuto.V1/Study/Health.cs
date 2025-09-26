@@ -19,11 +19,14 @@ namespace XCMG.SQLAuto.V1.Study
             }
 
             // （207-0.7×年龄）×0.6~0.8
+            double maxHeartRate = 220;
             double maxHeartRateZone = 0;
             double minHeartRateZone = 0;
 
-            maxHeartRateZone = (207 - 0.7 * (ageNew * 1.0)) * 0.8;
-            minHeartRateZone = (207 - 0.7 * (ageNew * 1.0)) * 0.6;
+            //maxHeartRateZone = (maxHeartRate - 0.7 * (ageNew * 1.0)) * 0.8;
+            //minHeartRateZone = (maxHeartRate - 0.7 * (ageNew * 1.0)) * 0.6;
+            maxHeartRateZone = (maxHeartRate - ageNew * 1.0) * 0.8;
+            minHeartRateZone = (maxHeartRate - ageNew * 1.0) * 0.6;
 
             return $"您的燃脂区间：{minHeartRateZone:0.00}-{maxHeartRateZone:0.00}次/分钟。";
         }

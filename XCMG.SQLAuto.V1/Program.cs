@@ -7,8 +7,8 @@ public partial class Program
     static void Main(string[] args)
     {
         // 生成统计单
-        string filePath = "C:\\Mac\\Home\\Desktop\\20250919功能推广第二批数据迁移-1030\\徐工消防\\SQL导入模版_XF_0924.xlsx";
-        Helper.ImportExcel(filePath);
+        //string filePath = "C:\\Mac\\Home\\Desktop\\20250919功能推广第二批数据迁移-1030\\徐工消防\\SQL导入模版_XF_0924.xlsx";
+        //Helper.ImportExcel(filePath);
 
         //var currentThread = Thread.CurrentThread;
         //Console.WriteLine("线程标识：" + currentThread.Name);
@@ -20,10 +20,10 @@ public partial class Program
         // LINQ
         // LINQ.SelectNewObject();
 
-        //Console.WriteLine("请在下方输入您的年龄：");
-        //var age = Console.ReadLine();
-        //string healthMsg = Health.GetFatBurningHeartRateZone(age);
-        //Console.WriteLine(healthMsg);
+        Console.WriteLine("请在下方输入您的年龄：");
+        var age = Console.ReadLine();
+        string healthMsg = Health.GetFatBurningHeartRateZone(age);
+        Console.WriteLine(healthMsg);
     }
 }
 
